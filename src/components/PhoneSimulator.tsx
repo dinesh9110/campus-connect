@@ -77,8 +77,15 @@ export default function PhoneSimulator({ onRouteChanged }: PhoneSimulatorProps) 
       if (user) {
         try {
           const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
+          let docSnap;
+          try {
+            docSnap = await getDoc(docRef);
+          } catch (err) {
+            handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
+            return;
+          }
+
+          if (docSnap && docSnap.exists()) {
             setUserProfile(docSnap.data() as any);
           } else {
             const fallbackProfile = {
@@ -97,7 +104,12 @@ export default function PhoneSimulator({ onRouteChanged }: PhoneSimulatorProps) 
               ],
               avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
             };
-            await setDoc(docRef, fallbackProfile);
+            try {
+              await setDoc(docRef, fallbackProfile);
+            } catch (err) {
+              handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
+              return;
+            }
             setUserProfile(fallbackProfile);
           }
           navigateTo('home');
@@ -341,7 +353,12 @@ export default function PhoneSimulator({ onRouteChanged }: PhoneSimulatorProps) 
           ],
           avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80'
         };
-        await setDoc(doc(db, 'users', user.uid), newProfile);
+        try {
+          await setDoc(doc(db, 'users', user.uid), newProfile);
+        } catch (err) {
+          handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`);
+          return;
+        }
         
         // Seed default notifications
         const seedNotifs = [
@@ -372,7 +389,12 @@ export default function PhoneSimulator({ onRouteChanged }: PhoneSimulatorProps) 
         ];
         for (const notif of seedNotifs) {
           const newDocRef = doc(collection(db, 'notifications'));
-          await setDoc(newDocRef, notif);
+          try {
+            await setDoc(newDocRef, notif);
+          } catch (err) {
+            handleFirestoreError(err, OperationType.CREATE, `notifications/${newDocRef.id}`);
+            return;
+          }
         }
 
         setUserProfile(newProfile);
