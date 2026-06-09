@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validator: User Profile
+    function isValidUser(data) {
+      return data.keys().hasAll(['fullName', 'email']) 
+        && data.fullName is string 
+        && data.fullName.size() >= 1 
+        && data.fullName.size() <= 100
+        && data.email is string 
+        && data.email.size() >= 5 
+        && data.email.size() <= 120;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isOwner(userId) && isValidUser(incoming());
+      allow update: if isSignedIn() && isOwner(userId) && isValidUser(incoming()) 
+        && incoming().email == existing().email; // Immortal email field representation
+      allow delete: if false;
+    }
+
+    // Entity validator: Chat Message
+    function isValidMessage(data) {
+      return data.keys().hasAll(['text', 'senderEmail', 'senderName', 'createdAt'])
+        && data.keys().size() == 4
+        && data.text is string
+        && data.text.size() >= 1
+        && data.text.size() <= 1000
+        && data.senderEmail is string
+        && data.senderEmail.size() <= 120
+        && data.senderName is string
+        && data.senderName.size() <= 100;
+    }
+
+    match /messages/{messageId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(messageId) && isValidMessage(incoming()) 
+        && incoming().senderEmail == request.auth.token.email;
+      allow update, delete: if false; // Comms history is immutable in this system
+    }
+
+    // Entity validator: Alert Dispatch
+    function isValidNotification(data) {
+      return data.keys().hasAll(['title', 'desc', 'category', 'isNew', 'userId', 'time'])
+        && data.keys().size() == 6
+        && data.title is string
+        && data.title.size() <= 150
+        && data.desc is string
+        && data.desc.size() <= 400
+        && data.category is string
+        && data.category.size() <= 50
+        && data.userId is string
+        && data.isNew is bool;
+    }
+
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming());
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidNotification(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isNew']); // Tiered update permission
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+  }
+}

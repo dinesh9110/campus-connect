@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Store academic persona details of a user node in Campus Connect",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "description": "Legitimate academic full name" },
+        "email": { "type": "string", "description": "Campus institutional .edu email" },
+        "department": { "type": "string", "description": "Academic department" },
+        "classOf": { "type": "string", "description": "Graduation class year" },
+        "connections": { "type": "number", "description": "Count of peer connections established" },
+        "opportunities": { "type": "number", "description": "Count of active research or career opportunities" },
+        "projects": { "type": "number", "description": "Count of shared projects" },
+        "skills": { "type": "array", "description": "Skills parameters tracking" },
+        "achievements": { "type": "array", "description": "Verifiable award hash milestones strings" },
+        "avatarUrl": { "type": "string", "description": "User profile avatar image URL" }
+      },
+      "required": ["fullName", "email"]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "Secure message payloads transmitted through academic comms networks",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "Message context body content" },
+        "senderEmail": { "type": "string", "description": "Identity of transmitter" },
+        "senderName": { "type": "string", "description": "Human name of transmitter" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp index" }
+      },
+      "required": ["text", "senderEmail", "senderName", "createdAt"]
+    },
+    "Notification": {
+      "title": "Alert Dispatch",
+      "description": "Campus wide telemetry and schedule broadcast notifications",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Notification major notice title" },
+        "desc": { "type": "string", "description": "Detail summary payload" },
+        "category": { "type": "string", "description": "Academic, Nexus Match, or HackAward categories" },
+        "isNew": { "type": "boolean", "description": "Whether the user has unread state" },
+        "userId": { "type": "string", "description": "Recipient unique subscriber key" },
+        "time": { "type": "string", "description": "Relative time indicator" }
+      },
+      "required": ["title", "desc", "category", "isNew", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection storing users Academic Persona state"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Root collection holding standard chat interaction payloads"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Alert dispatches assigned to specific authenticated node subscribers"
+    }
+  }
+}

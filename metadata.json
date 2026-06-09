@@ -1,0 +1,6 @@
+{
+  "name": "Campus Connect",
+  "description": "Campus Connect is a premium, modern student platform featuring connecting with students, career opportunities, messaging, and responsive UI design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
